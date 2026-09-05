@@ -26,13 +26,32 @@ export default function JoinCTA() {
         joinedAt: serverTimestamp(),
         source: "join_cta",
       }, { merge: true });
-      if (u.email) {
-        await sendWelcomeEmail(u.displayName || "Hacker", u.email);
-      }
+
       setJoined(true);
+
+      if (u.email) {
+        try {
+          await sendWelcomeEmail(u.displayName || "Hacker", u.email);
+        } catch (emailError) {
+          console.error("Welcome email failed:", emailError);
+          setError("You joined successfully, but the welcome email could not be sent.");
+        }
+      }
     } catch (err: unknown) {
-      setError("Something went wrong. Please try again.");
       console.error(err);
+      const errorCode = err && typeof err === "object" && "code" in err
+        ? String((err as { code: string }).code)
+        : "";
+
+      if (errorCode === "auth/unauthorized-domain") {
+        setError("Google sign-in is not enabled for this website yet.");
+      } else if (errorCode === "auth/popup-closed-by-user") {
+        setError("Google sign-in was cancelled.");
+      } else if (errorCode === "permission-denied" || errorCode === "firestore/permission-denied") {
+        setError("Sign-in worked, but community membership could not be saved.");
+      } else {
+        setError("Unable to join right now. Please try again.");
+      }
     } finally {
       setJoining(false);
     }
