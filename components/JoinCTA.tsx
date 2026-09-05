@@ -18,7 +18,6 @@ export default function JoinCTA() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const u = result.user;
-      // Save to Firestore members collection
       await setDoc(doc(db, "members", u.uid), {
         uid: u.uid,
         name: u.displayName,
@@ -27,7 +26,6 @@ export default function JoinCTA() {
         joinedAt: serverTimestamp(),
         source: "join_cta",
       }, { merge: true });
-      // Send welcome email
       if (u.email) {
         await sendWelcomeEmail(u.displayName || "Hacker", u.email);
       }
